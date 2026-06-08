@@ -40,5 +40,6 @@ export async function getMyLoveDna() {
     .select('*')
     .eq('user_id', user.id)
     .maybeSingle();
-  return assertData(data, error);
+  if (error) throw error;
+  return data;
 }

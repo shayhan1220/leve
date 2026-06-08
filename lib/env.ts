@@ -5,6 +5,7 @@ const envSchema = z.object({
   EXPO_PUBLIC_SUPABASE_ANON_KEY: z.string().min(1),
   EXPO_PUBLIC_REVENUECAT_IOS_KEY: z.string().optional(),
   EXPO_PUBLIC_REVENUECAT_ANDROID_KEY: z.string().optional(),
+  EXPO_PUBLIC_VERIFICATION_URL: z.string().url().optional(),
 });
 
 export const env = envSchema.parse({
@@ -12,4 +13,5 @@ export const env = envSchema.parse({
   EXPO_PUBLIC_SUPABASE_ANON_KEY: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY,
   EXPO_PUBLIC_REVENUECAT_IOS_KEY: process.env.EXPO_PUBLIC_REVENUECAT_IOS_KEY,
   EXPO_PUBLIC_REVENUECAT_ANDROID_KEY: process.env.EXPO_PUBLIC_REVENUECAT_ANDROID_KEY,
+  EXPO_PUBLIC_VERIFICATION_URL: process.env.EXPO_PUBLIC_VERIFICATION_URL,
 });

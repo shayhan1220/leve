@@ -5,6 +5,9 @@ Women-only relationship and community app built with Expo and Supabase.
 ## Setup
 
 1. Copy `.env.example` to `.env` and set the public client keys.
+   - Set `EXPO_PUBLIC_VERIFICATION_URL` to the external identity provider start URL.
+   - The provider must redirect to the supplied `redirect_uri` after sending its signed result to
+     the `verify-callback` Edge Function.
 2. Apply `supabase/migrations` to a Supabase project.
 3. Configure Edge Function secrets:
    - `SUPABASE_SERVICE_ROLE_KEY`

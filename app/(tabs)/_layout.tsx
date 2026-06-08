@@ -1,7 +1,9 @@
 import { Redirect, Tabs } from 'expo-router';
 
 import { useAuthStore } from '@/features/auth/store';
+import { useProfile } from '@/features/auth/use-profile';
 import { useVerification } from '@/features/auth/use-verification';
+import { useLoveDna } from '@/features/lovedna/use-love-dna';
 import { colors } from '@/theme/tokens';
 
 const tabs = [
@@ -16,12 +18,21 @@ const tabs = [
 export default function TabsLayout() {
   const session = useAuthStore((state) => state.session);
   const verification = useVerification(session?.user.id);
+  const profile = useProfile(session?.user.id);
+  const profileReady = Boolean(profile.data?.nickname && profile.data.region);
+  const loveDna = useLoveDna(Boolean(session && verification.data?.is_verified && profileReady));
 
   if (!session) return <Redirect href="/(auth)/signup" />;
   if (verification.isLoading) return null;
   if (!verification.data?.is_verified || verification.data.is_female !== true) {
     return <Redirect href="/(auth)/verify" />;
   }
+  if (profile.isLoading) return null;
+  if (!profile.data?.nickname || !profile.data.region) {
+    return <Redirect href="/(auth)/profile-setup" />;
+  }
+  if (loveDna.isLoading) return null;
+  if (!loveDna.data) return <Redirect href="/(onboarding)/lovedna/intro" />;
 
   return (
     <Tabs screenOptions={{ headerShown: false, tabBarActiveTintColor: colors.accent }}>

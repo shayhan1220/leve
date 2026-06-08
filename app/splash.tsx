@@ -1,3 +1,5 @@
+import { router } from 'expo-router';
+import { useEffect } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { Screen } from '@/components/ui/screen';
@@ -5,6 +7,11 @@ import { Body, Title } from '@/components/ui/typography';
 import { colors, spacing, typography } from '@/theme/tokens';
 
 export default function SplashScreen() {
+  useEffect(() => {
+    const timer = setTimeout(() => router.replace('/'), 900);
+    return () => clearTimeout(timer);
+  }, []);
+
   return (
     <Screen style={styles.screen}>
       <View>
