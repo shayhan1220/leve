@@ -953,8 +953,9 @@ begin
   end if;
 
   insert into public.likes (from_user, to_user, type)
-  values (auth.uid(), to_user, type)
-  on conflict (from_user, to_user) do update set type = excluded.type, created_at = now();
+  values (auth.uid(), react.to_user, react.type)
+  on conflict on constraint likes_pkey
+  do update set type = excluded.type, created_at = now();
 
   if type in ('like', 'super') and exists (
     select 1 from public.likes
@@ -995,7 +996,7 @@ begin
   if gathering.host_id = auth.uid() then raise exception 'HOST_CANNOT_APPLY'; end if;
   insert into public.gathering_participants (gathering_id, user_id)
   values (apply_gathering.gathering_id, auth.uid())
-  on conflict (gathering_id, user_id) do update
+  on conflict on constraint gathering_participants_gathering_id_user_id_key do update
     set status = case
       when gathering_participants.status = 'rejected' then gathering_participants.status
       else 'applied'::public.participant_status
