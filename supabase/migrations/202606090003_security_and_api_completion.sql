@@ -921,14 +921,16 @@ declare
   a uuid;
   b uuid;
 begin
-  if not public.is_verified_female() or not public.is_verified_female(to_user) then
+  if not public.is_verified_female()
+    or not public.is_verified_female(react.to_user)
+  then
     raise exception 'VERIFICATION_REQUIRED';
   end if;
-  if to_user = auth.uid() then raise exception 'INVALID_TARGET'; end if;
+  if react.to_user = auth.uid() then raise exception 'INVALID_TARGET'; end if;
   if exists (
     select 1 from public.blocks
-    where (blocker_id = auth.uid() and blocked_id = to_user)
-       or (blocker_id = to_user and blocked_id = auth.uid())
+    where (blocker_id = auth.uid() and blocked_id = react.to_user)
+       or (blocker_id = react.to_user and blocked_id = auth.uid())
   ) then raise exception 'BLOCKED'; end if;
 
   perform pg_advisory_xact_lock(hashtextextended(auth.uid()::text || ':reaction', 0));
@@ -936,16 +938,16 @@ begin
   where from_user = auth.uid() and likes.to_user = react.to_user;
   caller_plan := public.current_plan();
 
-  if type = 'super' and caller_plan = 'free' then raise exception 'PLAN_REQUIRED'; end if;
+  if react.type = 'super' and caller_plan = 'free' then raise exception 'PLAN_REQUIRED'; end if;
   if existing_type is null or existing_type not in ('like', 'super') then
-    if type in ('like', 'super') and caller_plan = 'free' then
+    if react.type in ('like', 'super') and caller_plan = 'free' then
       select count(*) into daily_count from public.likes
       where from_user = auth.uid() and likes.type in ('like', 'super')
         and created_at >= date_trunc('day', now());
       if daily_count >= 10 then raise exception 'DAILY_LIMIT'; end if;
     end if;
   end if;
-  if type = 'super' and existing_type is distinct from 'super' then
+  if react.type = 'super' and existing_type is distinct from 'super' then
     select count(*) into daily_count from public.likes
     where from_user = auth.uid() and likes.type = 'super'
       and created_at >= date_trunc('day', now());
@@ -957,12 +959,14 @@ begin
   on conflict on constraint likes_pkey
   do update set type = excluded.type, created_at = now();
 
-  if type in ('like', 'super') and exists (
-    select 1 from public.likes
-    where from_user = to_user and likes.to_user = auth.uid() and likes.type in ('like', 'super')
+  if react.type in ('like', 'super') and exists (
+    select 1 from public.likes reverse_like
+    where reverse_like.from_user = react.to_user
+      and reverse_like.to_user = auth.uid()
+      and reverse_like.type in ('like', 'super')
   ) then
-    a := least(auth.uid(), to_user);
-    b := greatest(auth.uid(), to_user);
+    a := least(auth.uid(), react.to_user);
+    b := greatest(auth.uid(), react.to_user);
     insert into public.matches (user_a, user_b) values (a, b)
     on conflict (user_a, user_b) do update set user_a = excluded.user_a
     returning id into matched_id;
@@ -971,7 +975,7 @@ begin
     returning id into chat_id;
     insert into public.notifications (user_id, type, title, body, data)
     values (
-      to_user, 'match', '새로운 매칭이 생겼어요', '서로의 마음이 닿았어요.',
+      react.to_user, 'match', '새로운 매칭이 생겼어요', '서로의 마음이 닿았어요.',
       jsonb_build_object('match_id', matched_id, 'chat_id', chat_id)
     );
     return jsonb_build_object('matched', true, 'match_id', matched_id, 'chat_id', chat_id);
