@@ -1,0 +1,1 @@
+-- Local development only. Real verification rows must only be written by verify-callback.
