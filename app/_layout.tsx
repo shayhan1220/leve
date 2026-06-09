@@ -22,6 +22,14 @@ export default function RootLayout() {
             presentation: 'transparentModal',
           }}
         />
+        <Stack.Screen
+          name="host/cancel"
+          options={{
+            animation: 'fade',
+            contentStyle: { backgroundColor: 'transparent' },
+            presentation: 'transparentModal',
+          }}
+        />
       </Stack>
     </QueryClientProvider>
   );

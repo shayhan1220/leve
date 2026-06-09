@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(33);
+select plan(42);
 
 insert into auth.users (id, aud, role, phone, created_at, updated_at)
 values
@@ -43,6 +43,12 @@ select throws_ok(
   'P0001',
   'VERIFICATION_REQUIRED',
   'unverified account cannot compute Love DNA'
+);
+select throws_ok(
+  $$ select public.community_feed() $$,
+  'P0001',
+  'VERIFICATION_REQUIRED',
+  'unverified account cannot read community feed'
 );
 
 select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-000000000002', true);
@@ -247,6 +253,61 @@ select throws_ok(
   'P0001',
   'WEEKLY_LIMIT',
   'fourth premium direct gathering is rejected'
+);
+select is(
+  jsonb_array_length((public.community_feed())->'gatherings'),
+  3,
+  'community feed returns open gatherings'
+);
+select is(
+  (public.get_gathering_detail(
+    (select id from public.gatherings where title = '직접 모임 1')
+  )->>'is_host')::boolean,
+  true,
+  'gathering detail identifies its host'
+);
+select is(
+  jsonb_array_length(public.hosted_gatherings_dashboard()),
+  3,
+  'host dashboard lists created gatherings'
+);
+
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-000000000002', true);
+select lives_ok(
+  $$ select public.apply_gathering(
+    (select id from public.gatherings where title = '직접 모임 1')
+  ) $$,
+  'verified member can apply to an open gathering'
+);
+select is(
+  jsonb_array_length(public.applications_dashboard()),
+  1,
+  'application dashboard lists the member application'
+);
+
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-000000000004', true);
+select is(
+  (public.host_gathering_dashboard(
+    (select id from public.gatherings where title = '직접 모임 1')
+  )->>'applied_count')::integer,
+  1,
+  'host dashboard exposes pending application count'
+);
+select lives_ok(
+  $$ select public.review_participant(
+    (select gp.id
+     from public.gathering_participants gp
+     join public.gatherings g on g.id = gp.gathering_id
+     where g.title = '직접 모임 1'),
+    'confirm'
+  ) $$,
+  'host can confirm a participant'
+);
+select lives_ok(
+  $$ select public.cancel_gathering(
+    (select id from public.gatherings where title = '직접 모임 1')
+  ) $$,
+  'host can irreversibly cancel a gathering'
 );
 
 select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-000000000002', true);

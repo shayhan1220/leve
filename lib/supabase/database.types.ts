@@ -69,6 +69,35 @@ export type GatheringParticipant = {
   created_at: string;
 };
 
+export type GatheringSummary = Gathering & {
+  confirmed_count: number;
+  applied_count: number;
+  my_status: ParticipantStatus | null;
+};
+
+export type GatheringDetail = GatheringSummary & {
+  host_nickname: string | null;
+  host_region: string | null;
+  is_host: boolean;
+};
+
+export type HostedGathering = Gathering & {
+  confirmed_count: number;
+  applied_count: number;
+};
+
+export type HostParticipant = GatheringParticipant & {
+  nickname: string | null;
+  age: number | null;
+  region: string | null;
+  bio: string | null;
+  photo_path: string | null;
+};
+
+export type HostGatheringDashboard = HostedGathering & {
+  participants: HostParticipant[];
+};
+
 export type DiscoverFeedRow = {
   user_id: string;
   nickname: string | null;
@@ -267,6 +296,14 @@ export type Database = {
       };
       mark_read: { Args: { chat_id: string }; Returns: number };
       can_create_gathering: { Args: Record<PropertyKey, never>; Returns: Json };
+      community_feed: {
+        Args: { gathering_type?: string | null; page_size?: number };
+        Returns: Json;
+      };
+      get_gathering_detail: { Args: { target_id: string }; Returns: Json };
+      hosted_gatherings_dashboard: { Args: Record<PropertyKey, never>; Returns: Json };
+      host_gathering_dashboard: { Args: { target_id: string }; Returns: Json };
+      applications_dashboard: { Args: Record<PropertyKey, never>; Returns: Json };
       create_gathering: { Args: { payload: Json }; Returns: Gathering };
       apply_gathering: { Args: { gathering_id: string }; Returns: string };
       review_participant: {
