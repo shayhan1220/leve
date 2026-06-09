@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(16);
+select plan(21);
 
 insert into auth.users (id, aud, role, phone, created_at, updated_at)
 values
@@ -38,9 +38,49 @@ select throws_ok(
   'VERIFICATION_REQUIRED',
   'unverified account cannot call discovery'
 );
+select throws_ok(
+  $$ select public.compute_love_dna() $$,
+  'P0001',
+  'VERIFICATION_REQUIRED',
+  'unverified account cannot compute Love DNA'
+);
 
 select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-000000000002', true);
 select is(public.current_plan(), 'free'::public.plan, 'missing subscription resolves to free');
+select throws_ok(
+  $$ select public.compute_love_dna() $$,
+  'P0001',
+  'INSUFFICIENT_ANSWERS',
+  'Love DNA requires forty answers'
+);
+insert into public.love_dna_responses (user_id, question_id, axis, value)
+select
+  '00000000-0000-0000-0000-000000000002',
+  question_id,
+  case
+    when question_id <= 8 then 'S'
+    when question_id <= 16 then 'D'
+    when question_id <= 24 then 'A'
+    when question_id <= 32 then 'V'
+    else 'M'
+  end,
+  75
+from generate_series(1, 40) question_id;
+select is(
+  (public.compute_love_dna()).code,
+  'SDAVM',
+  'Love DNA computes the five-axis code'
+);
+select is(
+  (public.compute_love_dna()).clan,
+  'Explorer',
+  'Love DNA assigns the expected clan'
+);
+select is(
+  (public.compute_love_dna()).answered_count,
+  40,
+  'Love DNA records answer accuracy'
+);
 select is(
   (public.create_gathering(jsonb_build_object(
     'title', '검토 모임',

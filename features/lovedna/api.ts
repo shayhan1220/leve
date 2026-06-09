@@ -11,18 +11,39 @@ export const loveDnaResponseSchema = z.object({
 
 export type LoveDnaResponseInput = z.infer<typeof loveDnaResponseSchema>;
 
-export async function saveLoveDnaResponse(input: LoveDnaResponseInput) {
-  const payload = loveDnaResponseSchema.parse(input);
+export async function getMyLoveDnaResponses() {
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) throw new Error('로그인이 필요해요.');
 
-  const { error } = await supabase.from('love_dna_responses').upsert({
-    user_id: user.id,
-    ...payload,
-  });
+  const { data, error } = await supabase
+    .from('love_dna_responses')
+    .select('question_id,axis,value')
+    .eq('user_id', user.id)
+    .order('question_id');
   if (error) throw error;
+  return data;
+}
+
+export async function saveLoveDnaResponse(input: LoveDnaResponseInput) {
+  const [saved] = await saveLoveDnaResponses([input]);
+  return saved;
+}
+
+export async function saveLoveDnaResponses(inputs: LoveDnaResponseInput[]) {
+  const payload = z.array(loveDnaResponseSchema).min(1).max(100).parse(inputs);
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error('로그인이 필요해요.');
+
+  const { data, error } = await supabase
+    .from('love_dna_responses')
+    .upsert(payload.map((response) => ({ user_id: user.id, ...response })))
+    .select('question_id,axis,value');
+  if (error) throw error;
+  return data;
 }
 
 export async function computeLoveDna() {
@@ -37,7 +58,7 @@ export async function getMyLoveDna() {
   if (!user) throw new Error('로그인이 필요해요.');
   const { data, error } = await supabase
     .from('love_dna_profiles')
-    .select('*')
+    .select('user_id,code,clan,axis_s,axis_d,axis_a,axis_v,axis_m,answered_count,updated_at')
     .eq('user_id', user.id)
     .maybeSingle();
   if (error) throw error;
