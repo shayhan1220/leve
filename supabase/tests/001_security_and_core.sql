@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(21);
+select plan(24);
 
 insert into auth.users (id, aud, role, phone, created_at, updated_at)
 values
@@ -82,6 +82,11 @@ select is(
   'Love DNA records answer accuracy'
 );
 select is(
+  (select count(*)::integer from public.discover_feed()),
+  2,
+  'verified discovery returns eligible profiles'
+);
+select is(
   (public.create_gathering(jsonb_build_object(
     'title', '검토 모임',
     'description', '검토가 필요한 충분히 긴 모임 설명입니다.',
@@ -107,6 +112,16 @@ select is(
 );
 select is((select count(*)::integer from public.matches), 1, 'exactly one match exists');
 select is((select count(*)::integer from public.chats), 1, 'match creates exactly one chat');
+select is(
+  jsonb_array_length(public.list_matches()),
+  1,
+  'match list returns the mutual match'
+);
+select is(
+  (public.list_matches()->0->>'nickname'),
+  '프리',
+  'match list returns the other member'
+);
 
 select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-000000000004', true);
 select is(public.current_plan(), 'premium'::public.plan, 'active premium subscription is returned');

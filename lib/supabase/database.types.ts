@@ -75,10 +75,12 @@ export type DiscoverFeedRow = {
   age: number | null;
   region: string | null;
   bio: string | null;
+  looking_for: string[];
   identity_tags: string[];
   photo_path: string | null;
   compatibility: number;
   score_breakdown: Json;
+  love_dna_clan: LoveDnaProfile['clan'] | null;
   created_at: string;
 };
 
@@ -245,6 +247,7 @@ export type Database = {
         Returns: Json;
       };
       who_liked_me: { Args: Record<PropertyKey, never>; Returns: Json };
+      list_matches: { Args: Record<PropertyKey, never>; Returns: Json };
       mark_read: { Args: { chat_id: string }; Returns: number };
       can_create_gathering: { Args: Record<PropertyKey, never>; Returns: Json };
       create_gathering: { Args: { payload: Json }; Returns: Gathering };
