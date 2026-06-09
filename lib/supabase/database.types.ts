@@ -248,6 +248,23 @@ export type Database = {
       };
       who_liked_me: { Args: Record<PropertyKey, never>; Returns: Json };
       list_matches: { Args: Record<PropertyKey, never>; Returns: Json };
+      can_access_chat: {
+        Args: { target_chat_id: string; viewer_id?: string };
+        Returns: boolean;
+      };
+      list_chat_messages: {
+        Args: { target_chat_id: string; before_at?: string | null; page_size?: number };
+        Returns: Database['public']['Tables']['messages']['Row'][];
+      };
+      create_date_proposal: {
+        Args: {
+          target_chat_id: string;
+          proposed_at: string;
+          proposed_place: string;
+          note?: string | null;
+        };
+        Returns: Database['public']['Tables']['date_proposals']['Row'];
+      };
       mark_read: { Args: { chat_id: string }; Returns: number };
       can_create_gathering: { Args: Record<PropertyKey, never>; Returns: Json };
       create_gathering: { Args: { payload: Json }; Returns: Gathering };

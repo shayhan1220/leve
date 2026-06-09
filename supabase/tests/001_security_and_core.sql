@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(24);
+select plan(33);
 
 insert into auth.users (id, aud, role, phone, created_at, updated_at)
 values
@@ -121,6 +121,72 @@ select is(
   (public.list_matches()->0->>'nickname'),
   '프리',
   'match list returns the other member'
+);
+select is(
+  public.can_access_chat((select id from public.chats limit 1)),
+  true,
+  'matched member can access the chat'
+);
+select lives_ok(
+  $$ insert into public.messages (chat_id, sender_id, type, body)
+     values (
+       (select id from public.chats limit 1),
+       '00000000-0000-0000-0000-000000000003',
+       'text',
+       '안녕하세요'
+     ) $$,
+  'matched member can send a message'
+);
+select is(
+  (select count(*)::integer from public.notifications
+   where user_id = '00000000-0000-0000-0000-000000000002' and type = 'message'),
+  1,
+  'new message creates a recipient notification'
+);
+select lives_ok(
+  $$ select public.create_date_proposal(
+       (select id from public.chats limit 1),
+       now() + interval '4 days',
+       '성수 전시',
+       null
+     ) $$,
+  'matched member can atomically create a date proposal'
+);
+
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-000000000002', true);
+select is(
+  public.mark_read((select id from public.chats limit 1)),
+  1,
+  'recipient can mark incoming messages read'
+);
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-000000000003', true);
+select is(
+  (select read_at is null from public.list_chat_messages(
+    (select id from public.chats limit 1), null, 30
+  ) limit 1),
+  true,
+  'free member cannot see read receipts'
+);
+insert into public.subscriptions (user_id, plan, status)
+values ('00000000-0000-0000-0000-000000000003', 'plus', 'active');
+select is(
+  (select read_at is not null from public.list_chat_messages(
+    (select id from public.chats limit 1), null, 30
+  ) limit 1),
+  true,
+  'plus member can see read receipts'
+);
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-000000000002', true);
+select lives_ok(
+  $$ update public.date_proposals set status = 'accepted'
+     where proposer_id = '00000000-0000-0000-0000-000000000003' $$,
+  'proposal recipient can accept a date'
+);
+select public.block_user('00000000-0000-0000-0000-000000000003');
+select is(
+  public.can_access_chat((select id from public.chats limit 1)),
+  false,
+  'blocking a member closes existing chat access'
 );
 
 select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-000000000004', true);

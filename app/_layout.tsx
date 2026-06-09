@@ -13,7 +13,16 @@ export default function RootLayout() {
   return (
     <QueryClientProvider client={queryClient}>
       <StatusBar style="dark" />
-      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.bg } }} />
+      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.bg } }}>
+        <Stack.Screen
+          name="date-proposal"
+          options={{
+            animation: 'slide_from_bottom',
+            contentStyle: { backgroundColor: 'transparent' },
+            presentation: 'transparentModal',
+          }}
+        />
+      </Stack>
     </QueryClientProvider>
   );
 }
