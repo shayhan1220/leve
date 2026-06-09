@@ -137,12 +137,14 @@ select lives_ok(
      ) $$,
   'matched member can send a message'
 );
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-000000000002', true);
 select is(
   (select count(*)::integer from public.notifications
    where user_id = '00000000-0000-0000-0000-000000000002' and type = 'message'),
   1,
   'new message creates a recipient notification'
 );
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-000000000003', true);
 select lives_ok(
   $$ select public.create_date_proposal(
        (select id from public.chats limit 1),
@@ -167,8 +169,10 @@ select is(
   true,
   'free member cannot see read receipts'
 );
+set local role postgres;
 insert into public.subscriptions (user_id, plan, status)
 values ('00000000-0000-0000-0000-000000000003', 'plus', 'active');
+set local role authenticated;
 select is(
   (select read_at is not null from public.list_chat_messages(
     (select id from public.chats limit 1), null, 30
